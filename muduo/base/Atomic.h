@@ -39,7 +39,8 @@ class AtomicIntegerT : noncopyable
   T get()
   {
     // in gcc >= 4.7: __atomic_load_n(&value_, __ATOMIC_SEQ_CST)
-    return __sync_val_compare_and_swap(&value_, 0, 0);
+    return __sync_val_compare_and_swap(&value_, 0, 0); //type __sync_val_compare_and_swap (type *ptr, type oldval type newval, ...)
+    // 比较*ptr与oldval的值，如果两者相等，则将newval更新到*ptr并返回操作之前*ptr的值
   }
 
   T getAndAdd(T x)
