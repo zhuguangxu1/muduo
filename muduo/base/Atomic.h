@@ -39,13 +39,15 @@ class AtomicIntegerT : noncopyable
   T get()
   {
     // in gcc >= 4.7: __atomic_load_n(&value_, __ATOMIC_SEQ_CST)
-    return __sync_val_compare_and_swap(&value_, 0, 0);
+    return __sync_val_compare_and_swap(&value_, 0, 0); //type __sync_val_compare_and_swap (type *ptr, type oldval type newval, ...)
+   // 比较*ptr与oldval的值，如果两者相等，则将newval更新到*ptr并返回操作之前*ptr的值
   }
 
   T getAndAdd(T x)
   {
     // in gcc >= 4.7: __atomic_fetch_add(&value_, x, __ATOMIC_SEQ_CST)
-    return __sync_fetch_and_add(&value_, x);
+    return __sync_fetch_and_add(&value_, x); //type __sync_fetch_and_add (type *ptr, type value, ...)
+    // 将value加到*ptr上，结果更新到*ptr，并返回操作之前*ptr的值
   }
 
   T addAndGet(T x)
@@ -81,7 +83,8 @@ class AtomicIntegerT : noncopyable
   T getAndSet(T newValue)
   {
     // in gcc >= 4.7: __atomic_exchange_n(&value_, newValue, __ATOMIC_SEQ_CST)
-    return __sync_lock_test_and_set(&value_, newValue);
+    return __sync_lock_test_and_set(&value_, newValue);//type __sync_lock_test_and_set (type *ptr, type value, ...)
+    // 将value写入*ptr，对*ptr加锁，并返回操作之前*ptr的值。即，try spinlock语义
   }
 
  private:
