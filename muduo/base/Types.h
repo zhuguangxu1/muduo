@@ -76,6 +76,10 @@ inline void memZero(void* p, size_t n)
 // implicit_cast would have been part of the C++ standard library,
 // but the proposal was submitted too late.  It will probably make
 // its way into the language in the future.
+//使用隐式广播作为static_cast或const_cast的安全版本以在类型层次结构中进行向上转换（即，将指向Foo的指针转换为指向SuperclassOfFoo的指针，或者将指向Foo的指针转换为指向Foo的const指针）。
+//当您使用implicit_cast时，编译器将检查强制转换是否安全。 在许多令人惊讶的情况下，这样的显式隐式隐式广播是必需的，
+//这些情况下C ++要求精确的类型匹配，而不是可转换为目标类型的参数类型。可以推断出From类型，因此使用隐式隐式广播的首选语法与static_cast等相同： hidden_cast <ToType>（expr）
+//hidden_cast本来应该是C ++标准库的一部分，但是该提案提交得太迟了。 将来可能会融入语言。
 template<typename To, typename From>
 inline To implicit_cast(From const &f)
 {
@@ -99,21 +103,31 @@ inline To implicit_cast(From const &f)
 //    if (dynamic_cast<Subclass1>(foo)) HandleASubclass1Object(foo);
 //    if (dynamic_cast<Subclass2>(foo)) HandleASubclass2Object(foo);
 // You should design the code some other way not to need this.
+//
+//当您进行向上转换（即，将指针从Foo类型转换为SuperclassOfFoo类型）时，可以使用implicit_cast <>，因为向上转换始终会成功。向下转换时（即将Foo键入SubclassOfFoo类型），
+//static_cast <>是不安全的，因为您如何知道指针实际上是SubclassOfFoo类型？它可以是一个简单的Foo，也可以是DifferentSubClassOfFoo类型 
+//因此，当您向下转换时，应该使用此宏。在调试模式下，我们使用dynamic_cast <>再次检查向下转换是否合法（如果不合法则死亡）。
+//在普通模式下，我们改为执行有效的static_cast <>。因此，在调试模式下进行测试以确保强制转换合法很重要！
+//这是代码中我们应该使用dynamic_cast <>的唯一位置。
+//特别是，您不应使用dynamic_cast <>来
+//做RTTI（例如这样的代码：
+//    如果（dynamic_cast <Subclass1>（foo））HandleASubclass1Object（foo）;
+//    如果（dynamic_cast <Subclass2>（foo））HandleASubclass2Object（foo）;
+//您应该以其他方式设计代码而不需要此代码。
 
 template<typename To, typename From>     // use like this: down_cast<T*>(foo);
-inline To down_cast(From* f)                     // so we only accept pointers
+inline To down_cast(From* f)                     // so we only accept pointers 所以我们只接受指针
 {
-  // Ensures that To is a sub-type of From *.  This test is here only
-  // for compile-time type checking, and has no overhead in an
-  // optimized build at run-time, as it will be optimized away
-  // completely.
+  // Ensures that To is a sub-type of From *. (确保To是From *的子类型) This test is here only for compile-time type checking, 
+  //and has no overhead in an optimized build at run-time, as it will be optimized away completely.
+  //该测试仅用于编译时类型检查，并且在运行时经过优化的构建中没有开销，因为它将完全被优化。
   if (false)
   {
     implicit_cast<From*, To>(0);
   }
 
-#if !defined(NDEBUG) && !defined(GOOGLE_PROTOBUF_NO_RTTI)
-  assert(f == NULL || dynamic_cast<To>(f) != NULL);  // RTTI: debug mode only!
+#if !defined(NDEBUG) && !defined(GOOGLE_PROTOBUF_NO_RTTI)   //打开Debug模式
+  assert(f == NULL || dynamic_cast<To>(f) != NULL);  // RTTI: debug mode only! //在调试模式下测试其是否可行 不能转换就代码结束 测试成功换为普通模式才可以进行static_cast转换
 #endif
   return static_cast<To>(f);
 }
